@@ -1,0 +1,112 @@
+server:
+  port: 18002
+  compression:
+    enabled: true
+spring:
+  application:
+    name: @project.name@
+  profiles:
+    active: dev
+  config:
+    import:
+      - "optional:consul:"
+  cloud:
+    openfeign:
+      circuitbreaker:
+        enabled: true
+        group:
+          enabled: true
+    loadbalancer:
+      zone: guangzhou
+      configurations: zone-preference
+    consul:
+      config:
+        format: yaml
+      discovery:
+        tags: email=ben.deng@walmart.com
+        instance-zone: guangzhou
+        instance-id: ${spring.application.name}:${vcap.application.instance_id:${spring.application.instance_id:${random.value}}}
+  threads:
+    virtual:
+      enabled: true
+  messages:
+    basename: i18n/messages
+  jackson:
+    locale: zh_CN
+    time-zone: GMT+8
+    date-format: yyyy-MM-dd HH:mm:ss
+    default-property-inclusion: non_null
+  http:
+    clients:
+      connect-timeout: 1s
+      read-timeout: 1s
+      redirects: dont_follow
+  cache:
+    type: caffeine
+    cache-names: views, release_views
+    caffeine:
+      spec: maximumSize=1000,expireAfterWrite=60m,recordStats
+  grpc:
+    server:
+      port: 9090
+logging:
+  file:
+    name: log/app.log
+  structured:
+    format:
+      file: logstash
+  logback:
+    rollingpolicy:
+      max-history: 2
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"
+  tracing:
+    export:
+      enabled: true
+    sampling:
+      probability: 1.0
+  endpoint:
+    health:
+      show-details: always
+    env:
+      show-values: always
+    quartz:
+      show-values: always
+    configprops:
+      show-values: always
+  opentelemetry:
+    tracing:
+      export:
+        otlp:
+          transport: http
+  otlp:
+    metrics:
+      export:
+        enabled: false
+jobrunr:
+  background-job-server:
+    enabled: true
+    thread-type: virtualthreads
+    metrics:
+      enabled: true
+# Resilience4j 熔断配置
+resilience4j:
+  timelimiter:
+    configs:
+      default:
+        timeout-duration: 5s
+  circuitbreaker:
+    configs:
+      default:
+        sliding-window-size: 10
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 10s
+        permitted-number-of-calls-in-half-open-state: 5
+  retry:
+    configs:
+      default:
+        max-attempts: 3
+        wait-duration: 1s

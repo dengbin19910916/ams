@@ -1,0 +1,30 @@
+syntax = "proto3";
+
+option java_package = "io.xxx.cms.grpc";
+option java_multiple_files = true;
+option java_outer_classname = "AudienceProto";
+
+import "google/protobuf/struct.proto";
+
+service AudienceService {
+  rpc Match (AudienceMatchRequest) returns (AudienceMatchResponse) {}
+  rpc BatchMatch (AudienceBatchMatchRequest) returns (AudienceBatchMatchResponse) {}
+}
+
+message AudienceMatchRequest {
+  optional int64 userId = 1;
+  google.protobuf.Struct tagValues = 2;
+}
+
+message AudienceMatchResponse {
+  bool matched = 1;
+}
+
+message AudienceBatchMatchRequest {
+  optional int64 userId = 1;
+  map<string, google.protobuf.Struct> groupTagValues = 2;
+}
+
+message AudienceBatchMatchResponse {
+  map<string, bool> results = 1;
+}

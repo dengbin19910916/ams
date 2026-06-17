@@ -1,20 +1,16 @@
 package io.xxx.ams.audience;
 
-import com.alibaba.fastjson2.JSON;
 import com.google.protobuf.Struct;
 import com.google.protobuf.Value;
 import io.grpc.stub.StreamObserver;
-import io.xxx.ams.common.RedisKeys;
-import io.xxx.cms.grpc.AudienceBatchMatchRequest;
-import io.xxx.cms.grpc.AudienceBatchMatchResponse;
-import io.xxx.cms.grpc.AudienceMatchRequest;
-import io.xxx.cms.grpc.AudienceMatchResponse;
+import io.xxx.ams.grpc.AudienceBatchMatchRequest;
+import io.xxx.ams.grpc.AudienceBatchMatchResponse;
+import io.xxx.ams.grpc.AudienceMatchResponse;
+import io.xxx.ams.grpc.AudienceServiceGrpc;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.grpc.server.service.GrpcService;
 
-import java.util.Collections;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
@@ -22,12 +18,12 @@ import java.util.stream.Collectors;
 
 @GrpcService
 @RequiredArgsConstructor
-public class AudienceService extends io.xxx.cms.grpc.AudienceServiceGrpc.AudienceServiceImplBase {
+public class AudienceService extends AudienceServiceGrpc.AudienceServiceImplBase {
 
     private final StringRedisTemplate redisTemplate;
 
     @Override
-    public void match(AudienceMatchRequest request, StreamObserver<AudienceMatchResponse> responseObserver) {
+    public void match(io.xxx.ams.grpc.AudienceMatchRequest request, StreamObserver<AudienceMatchResponse> responseObserver) {
         long userId = request.getUserId();
         Struct tagValues = request.getTagValues();
         boolean matched = matchTags(userId, tagValues);
@@ -50,7 +46,7 @@ public class AudienceService extends io.xxx.cms.grpc.AudienceServiceGrpc.Audienc
                         entry -> matchTags(userId, entry.getValue())
                 ));
 
-        AudienceBatchMatchResponse response = AudienceBatchMatchResponse.newBuilder()
+        AudienceBatchMatchResponse response = io.xxx.ams.grpc.AudienceBatchMatchResponse.newBuilder()
                 .putAllResults(results)
                 .build();
         responseObserver.onNext(response);

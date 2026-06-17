@@ -2,7 +2,7 @@ spring:
   datasource:
     name: ${spring.application.name}
     driver-class-name: com.p6spy.engine.spy.P6SpyDriver
-    url: jdbc:p6spy:mysql://localhost:3306/cms
+    url: jdbc:p6spy:mysql://localhost:3306/ams
     username: ${mysql.username:root}
     password: ${mysql.password:root}
   data:

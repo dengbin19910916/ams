@@ -49,6 +49,11 @@ spring:
   grpc:
     server:
       port: 9090
+  pulsar:
+    client:
+      service-url: pulsar://localhost:6650
+    consumer:
+      subscription-type: shared
 logging:
   file:
     name: log/app.log
@@ -110,3 +115,7 @@ resilience4j:
       default:
         max-attempts: 3
         wait-duration: 1s
+ams:
+  audience:
+    tag-invalidate:
+      subscription-name: ams-tag-invalidate-${random.value}

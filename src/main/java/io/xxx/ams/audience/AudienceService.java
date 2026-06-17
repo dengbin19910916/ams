@@ -8,25 +8,25 @@ import io.xxx.ams.grpc.AudienceBatchMatchResponse;
 import io.xxx.ams.grpc.AudienceMatchResponse;
 import io.xxx.ams.grpc.AudienceServiceGrpc;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.grpc.server.service.GrpcService;
 
+import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
 
 @GrpcService
 @RequiredArgsConstructor
 public class AudienceService extends AudienceServiceGrpc.AudienceServiceImplBase {
 
-    private final StringRedisTemplate redisTemplate;
+    private final UserTagCache userTagCache;
 
     @Override
     public void match(io.xxx.ams.grpc.AudienceMatchRequest request, StreamObserver<AudienceMatchResponse> responseObserver) {
         long userId = request.getUserId();
         Struct tagValues = request.getTagValues();
-        boolean matched = matchTags(userId, tagValues);
+        UserTags tags = userTagCache.load(userId);
+        boolean matched = matchTags(tags, tagValues);
 
         AudienceMatchResponse response = AudienceMatchResponse.newBuilder()
                 .setMatched(matched)
@@ -40,10 +40,11 @@ public class AudienceService extends AudienceServiceGrpc.AudienceServiceImplBase
         long userId = request.getUserId();
         Map<String, Struct> groupTagValuesMap = request.getGroupTagValuesMap();
 
+        UserTags tags = userTagCache.load(userId);
         Map<String, Boolean> results = groupTagValuesMap.entrySet().stream()
                 .collect(Collectors.toMap(
                         Map.Entry::getKey,
-                        entry -> matchTags(userId, entry.getValue())
+                        entry -> matchTags(tags, entry.getValue())
                 ));
 
         AudienceBatchMatchResponse response = io.xxx.ams.grpc.AudienceBatchMatchResponse.newBuilder()
@@ -53,48 +54,36 @@ public class AudienceService extends AudienceServiceGrpc.AudienceServiceImplBase
         responseObserver.onCompleted();
     }
 
-    private boolean matchTags(long userId, Struct tagValues) {
-        return ThreadLocalRandom.current().nextInt(3) % 2 == 0;
-//        if (tagValues.getFieldsCount() == 0) {
-//            return true;
-//        }
-//
-//        String redisKey = RedisKeys.Tag.userTag(userId);
-//        Map<Object, Object> userTags = redisTemplate.opsForHash().entries(redisKey);
-//        if (userTags.isEmpty()) {
-//            return false;
-//        }
-//
-//        for (Map.Entry<String, Value> entry : tagValues.getFieldsMap().entrySet()) {
-//            String tagKey = entry.getKey();
-//            Set<String> requiredValues = extractValues(entry.getValue());
-//            if (requiredValues.isEmpty()) {
-//                continue;
-//            }
-//
-//            Object raw = userTags.get(tagKey);
-//            if (raw == null) {
-//                return false;
-//            }
-//
-//            List<String> userTagList = JSON.parseArray(raw.toString(), String.class);
-//            if (userTagList == null || Collections.disjoint(userTagList, requiredValues)) {
-//                return false;
-//            }
-//        }
-//        return true;
+    static boolean matchTags(UserTags userTags, Struct tagValues) {
+        if (tagValues.getFieldsCount() == 0) {
+            return true;
+        }
+        if (userTags.isEmpty()) {
+            return false;
+        }
+        for (Map.Entry<String, Value> entry : tagValues.getFieldsMap().entrySet()) {
+            Set<String> requiredValues = extractValues(entry.getValue());
+            if (requiredValues.isEmpty()) {
+                continue;
+            }
+            Set<String> userValues = userTags.tags().get(entry.getKey());
+            if (userValues == null || Collections.disjoint(userValues, requiredValues)) {
+                return false;
+            }
+        }
+        return true;
     }
 
-    private Set<String> extractValues(Value value) {
+    static Set<String> extractValues(Value value) {
         if (value.getKindCase() == Value.KindCase.LIST_VALUE) {
             return value.getListValue().getValuesList().stream()
-                    .map(this::valueToString)
+                    .map(AudienceService::valueToString)
                     .collect(Collectors.toSet());
         }
         return Set.of(valueToString(value));
     }
 
-    private String valueToString(Value value) {
+    private static String valueToString(Value value) {
         return switch (value.getKindCase()) {
             case STRING_VALUE -> value.getStringValue();
             case NUMBER_VALUE -> String.valueOf(value.getNumberValue());

@@ -11,9 +11,7 @@ import java.util.Map;
 import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class UserTagCacheTests {
@@ -31,7 +29,7 @@ class UserTagCacheTests {
 
     @Test
     void parseUserTags_parsesJsonArraysToSets() {
-        Map<Object, Object> raw = Map.<Object, Object>of(
+        Map<String, String> raw = Map.of(
                 "gender", "[\"male\"]",
                 "age", "[\"18-24\",\"25-34\"]"
         );

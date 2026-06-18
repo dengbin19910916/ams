@@ -27,7 +27,8 @@ public class UserTagCache {
 
     public UserTags load(long userId) {
         return local.get(userId, _ -> {
-            Map<Object, Object> raw = redis.opsForHash().entries(RedisKeys.Tag.userTag(userId));
+            String redisKey = RedisKeys.Tag.userTag(userId);
+            Map<String, String> raw = redis.<String, String>opsForHash().entries(redisKey);
             return parseUserTags(raw);
         });
     }
@@ -36,14 +37,14 @@ public class UserTagCache {
         local.invalidate(userId);
     }
 
-    static UserTags parseUserTags(Map<Object, Object> raw) {
+    static UserTags parseUserTags(Map<String, String> raw) {
         if (raw == null || raw.isEmpty()) {
             return UserTags.empty();
         }
         Map<String, Set<String>> tags = new HashMap<>(raw.size());
-        for (Map.Entry<Object, Object> e : raw.entrySet()) {
-            String tagKey = String.valueOf(e.getKey());
-            List<String> values = JSON.parseArray(String.valueOf(e.getValue()), String.class);
+        for (Map.Entry<String, String> e : raw.entrySet()) {
+            String tagKey = e.getKey();
+            List<String> values = JSON.parseArray(e.getValue(), String.class);
             tags.put(tagKey, values == null || values.isEmpty() ? Set.of() : Set.copyOf(values));
         }
         return new UserTags(Map.copyOf(tags));

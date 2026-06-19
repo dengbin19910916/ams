@@ -16,7 +16,7 @@ public class UserLabelChangeConsumer {
 
     @PulsarListener(
             topics = Topics.Label.CHANGE_TOPIC,
-            subscriptionName = "${ams.audience.lavel-invalidate.subscription-name}",
+            subscriptionName = "${ams.audience.label-invalidate.subscription-name}",
             schemaType = SchemaType.JSON
     )
     public void onUserLabelChange(UserLabelChangeEvent event) {

@@ -43,9 +43,9 @@ public class UserLabelCache {
         }
         Map<String, Set<String>> labels = new HashMap<>(raw.size());
         for (Map.Entry<String, String> e : raw.entrySet()) {
-            String lavelKey = e.getKey();
+            String labelKey = e.getKey();
             List<String> values = JSON.parseArray(e.getValue(), String.class);
-            labels.put(lavelKey, values == null || values.isEmpty() ? Set.of() : Set.copyOf(values));
+            labels.put(labelKey, values == null || values.isEmpty() ? Set.of() : Set.copyOf(values));
         }
         return new UserLabels(Map.copyOf(labels));
     }

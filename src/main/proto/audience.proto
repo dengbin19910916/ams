@@ -13,7 +13,7 @@ service AudienceService {
 
 message AudienceMatchRequest {
   optional int64 userId = 1;
-  google.protobuf.Struct tagValues = 2;
+  google.protobuf.Struct labels = 2;
 }
 
 message AudienceMatchResponse {
@@ -22,7 +22,7 @@ message AudienceMatchResponse {
 
 message AudienceBatchMatchRequest {
   optional int64 userId = 1;
-  map<string, google.protobuf.Struct> groupTagValues = 2;
+  map<string, google.protobuf.Struct> groupLabels = 2;
 }
 
 message AudienceBatchMatchResponse {

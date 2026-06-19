@@ -2,8 +2,8 @@ package io.xxx.ams.common;
 
 public interface Topics {
 
-    interface Tag {
+    interface Label {
 
-        String CHANGE_TOPIC = "audience-tag-change";
+        String CHANGE_TOPIC = "audience-label-change";
     }
 }

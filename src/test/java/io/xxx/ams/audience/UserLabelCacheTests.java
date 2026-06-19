@@ -14,7 +14,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-class UserTagCacheTests {
+class UserLabelCacheTests {
 
     @Mock
     StringRedisTemplate redis;
@@ -23,55 +23,55 @@ class UserTagCacheTests {
     HashOperations<String, Object, Object> hashOps;
 
     @Test
-    void parseUserTags_emptyMap_returnsEmpty() {
-        assertThat(UserTagCache.parseUserTags(Map.of())).isEqualTo(UserTags.empty());
+    void parseUserLabels_emptyMap_returnsEmpty() {
+        assertThat(UserLabelCache.parseUserLabels(Map.of())).isEqualTo(UserLabels.empty());
     }
 
     @Test
-    void parseUserTags_parsesJsonArraysToSets() {
+    void parseUserLabels_parsesJsonArraysToSets() {
         Map<String, String> raw = Map.of(
                 "gender", "[\"male\"]",
                 "age", "[\"18-24\",\"25-34\"]"
         );
 
-        UserTags result = UserTagCache.parseUserTags(raw);
+        UserLabels result = UserLabelCache.parseUserLabels(raw);
 
-        assertThat(result.tags()).containsEntry("gender", Set.of("male"));
-        assertThat(result.tags()).containsEntry("age", Set.of("18-24", "25-34"));
+        assertThat(result.labels()).containsEntry("gender", Set.of("male"));
+        assertThat(result.labels()).containsEntry("age", Set.of("18-24", "25-34"));
     }
 
     @Test
     void load_l1Miss_loadsFromRedisAndParses() {
-        UserTagCache cache = new UserTagCache(redis);
+        UserLabelCache cache = new UserLabelCache(redis);
         when(redis.opsForHash()).thenReturn(hashOps);
-        when(hashOps.entries("audience:tags:123")).thenReturn(Map.<Object, Object>of("gender", "[\"male\"]"));
+        when(hashOps.entries("audience:labels:123")).thenReturn(Map.<Object, Object>of("gender", "[\"male\"]"));
 
-        UserTags result = cache.load(123);
+        UserLabels result = cache.load(123);
 
-        assertThat(result.tags()).containsEntry("gender", Set.of("male"));
+        assertThat(result.labels()).containsEntry("gender", Set.of("male"));
     }
 
     @Test
     void load_l1Hit_doesNotHitRedis() {
-        UserTagCache cache = new UserTagCache(redis);
+        UserLabelCache cache = new UserLabelCache(redis);
         when(redis.opsForHash()).thenReturn(hashOps);
-        when(hashOps.entries("audience:tags:123")).thenReturn(Map.<Object, Object>of("gender", "[\"male\"]"));
+        when(hashOps.entries("audience:labels:123")).thenReturn(Map.<Object, Object>of("gender", "[\"male\"]"));
 
         cache.load(123);
         cache.load(123);
 
-        verify(hashOps, times(1)).entries("audience:tags:123");
+        verify(hashOps, times(1)).entries("audience:labels:123");
     }
 
     @Test
     void load_emptyRedisResult_cachedForPenetrationProtection() {
-        UserTagCache cache = new UserTagCache(redis);
+        UserLabelCache cache = new UserLabelCache(redis);
         when(redis.opsForHash()).thenReturn(hashOps);
-        when(hashOps.entries("audience:tags:999")).thenReturn(Map.of());
+        when(hashOps.entries("audience:labels:999")).thenReturn(Map.of());
 
         cache.load(999);
         cache.load(999);
 
-        verify(hashOps, times(1)).entries("audience:tags:999");
+        verify(hashOps, times(1)).entries("audience:labels:999");
     }
 }

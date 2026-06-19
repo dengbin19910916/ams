@@ -3,10 +3,7 @@ package io.xxx.ams.audience;
 import com.google.protobuf.Struct;
 import com.google.protobuf.Value;
 import io.grpc.stub.StreamObserver;
-import io.xxx.ams.grpc.AudienceBatchMatchRequest;
-import io.xxx.ams.grpc.AudienceBatchMatchResponse;
-import io.xxx.ams.grpc.AudienceMatchResponse;
-import io.xxx.ams.grpc.AudienceServiceGrpc;
+import io.xxx.ams.grpc.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.grpc.server.service.GrpcService;
 
@@ -19,14 +16,14 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class AudienceService extends AudienceServiceGrpc.AudienceServiceImplBase {
 
-    private final UserTagCache userTagCache;
+    private final UserLabelCache userLabelCache;
 
     @Override
-    public void match(io.xxx.ams.grpc.AudienceMatchRequest request, StreamObserver<AudienceMatchResponse> responseObserver) {
+    public void match(AudienceMatchRequest request, StreamObserver<AudienceMatchResponse> responseObserver) {
         long userId = request.getUserId();
-        Struct tagValues = request.getTagValues();
-        UserTags tags = userTagCache.load(userId);
-        boolean matched = matchTags(tags, tagValues);
+        Struct labels = request.getLabels();
+        UserLabels userLabels = userLabelCache.load(userId);
+        boolean matched = matchLabels(userLabels, labels);
 
         AudienceMatchResponse response = AudienceMatchResponse.newBuilder()
                 .setMatched(matched)
@@ -38,13 +35,13 @@ public class AudienceService extends AudienceServiceGrpc.AudienceServiceImplBase
     @Override
     public void batchMatch(AudienceBatchMatchRequest request, StreamObserver<AudienceBatchMatchResponse> responseObserver) {
         long userId = request.getUserId();
-        Map<String, Struct> groupTagValuesMap = request.getGroupTagValuesMap();
+        Map<String, Struct> groupLabelsMap = request.getGroupLabelsMap();
 
-        UserTags tags = userTagCache.load(userId);
-        Map<String, Boolean> results = groupTagValuesMap.entrySet().stream()
+        UserLabels userLabels = userLabelCache.load(userId);
+        Map<String, Boolean> results = groupLabelsMap.entrySet().stream()
                 .collect(Collectors.toMap(
                         Map.Entry::getKey,
-                        entry -> matchTags(tags, entry.getValue())
+                        entry -> matchLabels(userLabels, entry.getValue())
                 ));
 
         AudienceBatchMatchResponse response = io.xxx.ams.grpc.AudienceBatchMatchResponse.newBuilder()
@@ -54,19 +51,19 @@ public class AudienceService extends AudienceServiceGrpc.AudienceServiceImplBase
         responseObserver.onCompleted();
     }
 
-    static boolean matchTags(UserTags userTags, Struct tagValues) {
-        if (tagValues.getFieldsCount() == 0) {
+    static boolean matchLabels(UserLabels userLabels, Struct labels) {
+        if (labels.getFieldsCount() == 0) {
             return true;
         }
-        if (userTags.isEmpty()) {
+        if (userLabels.isEmpty()) {
             return false;
         }
-        for (Map.Entry<String, Value> entry : tagValues.getFieldsMap().entrySet()) {
+        for (Map.Entry<String, Value> entry : labels.getFieldsMap().entrySet()) {
             Set<String> requiredValues = extractValues(entry.getValue());
             if (requiredValues.isEmpty()) {
                 continue;
             }
-            Set<String> userValues = userTags.tags().get(entry.getKey());
+            Set<String> userValues = userLabels.labels().get(entry.getKey());
             if (userValues == null || Collections.disjoint(userValues, requiredValues)) {
                 return false;
             }

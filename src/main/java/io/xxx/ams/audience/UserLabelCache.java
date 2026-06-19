@@ -16,20 +16,20 @@ import java.util.concurrent.TimeUnit;
 
 @Component
 @RequiredArgsConstructor
-public class UserTagCache {
+public class UserLabelCache {
 
     private final StringRedisTemplate redis;
 
-    private final Cache<Long, UserTags> local = Caffeine.newBuilder()
+    private final Cache<Long, UserLabels> local = Caffeine.newBuilder()
             .maximumSize(10_000)
             .expireAfterWrite(30, TimeUnit.SECONDS)
             .build();
 
-    public UserTags load(long userId) {
+    public UserLabels load(long userId) {
         return local.get(userId, _ -> {
-            String redisKey = RedisKeys.Tag.userTag(userId);
+            String redisKey = RedisKeys.Label.userLabels(userId);
             Map<String, String> raw = redis.<String, String>opsForHash().entries(redisKey);
-            return parseUserTags(raw);
+            return parseUserLabels(raw);
         });
     }
 
@@ -37,16 +37,16 @@ public class UserTagCache {
         local.invalidate(userId);
     }
 
-    static UserTags parseUserTags(Map<String, String> raw) {
+    static UserLabels parseUserLabels(Map<String, String> raw) {
         if (raw == null || raw.isEmpty()) {
-            return UserTags.empty();
+            return UserLabels.empty();
         }
-        Map<String, Set<String>> tags = new HashMap<>(raw.size());
+        Map<String, Set<String>> labels = new HashMap<>(raw.size());
         for (Map.Entry<String, String> e : raw.entrySet()) {
-            String tagKey = e.getKey();
+            String lavelKey = e.getKey();
             List<String> values = JSON.parseArray(e.getValue(), String.class);
-            tags.put(tagKey, values == null || values.isEmpty() ? Set.of() : Set.copyOf(values));
+            labels.put(lavelKey, values == null || values.isEmpty() ? Set.of() : Set.copyOf(values));
         }
-        return new UserTags(Map.copyOf(tags));
+        return new UserLabels(Map.copyOf(labels));
     }
 }

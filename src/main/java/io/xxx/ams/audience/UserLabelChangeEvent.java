@@ -6,5 +6,5 @@ package io.xxx.ams.audience;
  *
  * @param userId 发生变更的用户 ID
  */
-public record UserTagChangeEvent(long userId) {
+public record UserLabelChangeEvent(long userId) {
 }

@@ -1,6 +1,8 @@
 syntax = "proto3";
 
-option java_package = "io.xxx.ams.grpc";
+package audience;
+
+option java_package = "io.xxx.ams.grpc.audience";
 option java_multiple_files = true;
 option java_outer_classname = "AudienceProto";
 
